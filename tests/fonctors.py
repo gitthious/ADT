@@ -3,12 +3,6 @@
 import unittest
 from ADT.fonctors import *
 
-def expected_fonctor(test, fonctor_result, expected_result):
-    test.assertEqual(len(fonctor_result), len(expected_result))
-    for o in expected_result:
-        test.assertTrue(o in fonctor_result)
-    test.assertEqual( len(fonctor_result.difference(expected_result)), 0)
-
 class HelperFunctionsTest(unittest.TestCase):
     def test_getattrsfromdict(self):
         def f(): pass
@@ -46,39 +40,44 @@ class HelperFunctionsTest(unittest.TestCase):
     
 class FonctorBaseTest(unittest.TestCase):
     def test_base(self):
-        r = [1, 2.2, 3, 4, 'aa', None] # fonctor is a set(), then all redondants are deleted
-        f = (1, 1, 2.2, 3, 4, 'aa', 'aa', None) | IDENT
-        expected_fonctor(self, f, r)
+        # fonctor is a set(), then all redondants are deleted
+        self.assertSetEqual(
+            (1, 1, 2.2, 3, 4, 'aa', 'aa', None) | IDENT,
+            set((1, 2.2, 3, 4, 'aa', None))
+        )
     def test_fonctor(self):
-        f = ("a", "bb", "ccc") | Fonctor(len)
-        r = (1, 2, 3)
-        expected_fonctor(self, f, r)
+        self.assertSetEqual(
+            ("a", "bb", "ccc") | Fonctor(len),
+            set((1,2,3))
+        )
         
 class FonctorClassTest(unittest.TestCase):
                 
     def test_FonctorClass(self):
-        r = (float, bool, int, str, type(None))
-        f = (1,2.2,3,4,'a','abc',None,True) | CLASS
-        expected_fonctor(self, f, r)
-        
-        r = (float, int, str)
-        f = (1,2.2,3,4,'a') | CLASS
-        expected_fonctor(self, f, r)
+        self.assertSetEqual(
+            (1,2.2,3,4,'a','abc',None,True) | CLASS,
+            set((float, bool, int, str, type(None)))
+        )
+        self.assertSetEqual(
+            (1,2.2,3,4,'a') | CLASS,
+            set((float, int, str))
+        )        
 
     def test_FonctorClass_old_newstyle_class(self):
         class X: pass
         class Y(object): pass
         x = X(); y = Y()
-        r = (X, Y)
-        f = (x, y) | CLASS
-        expected_fonctor(self, f, r)
+        self.assertSetEqual(
+            (x, y) | CLASS,
+            set((X, Y))
+        )
         
     def test_FonctorAttr(self):
-        f = (int, float) | ATT
+        f = (int, float) | attrs
         self.assertEqual(len(f), 4)
 
     def test_Fonctor_CLASS_ATTR(self):
-        f = (1,2.2,3,4,'a')| CLASS | ATT 
+        f = (1,2.2,3,4,'a')| CLASS | attrs 
         self.assertEqual(len(f), 4)
 
     def test_FonctorObjectAttr(self):
@@ -88,9 +87,10 @@ class FonctorClassTest(unittest.TestCase):
             C = 'abc'
             D = 1
         x = X()
-        f = x | OATT
-        r = (1, 1.3, 'abc')
-        expected_fonctor(self, f, r)
+        self.assertSetEqual(
+            x | valattrs,
+            set((1, 1.3, 'abc'))
+        )
         
     def test_FonctorObjectAttr_CLASS(self):
         class X:
@@ -99,15 +99,16 @@ class FonctorClassTest(unittest.TestCase):
             C = 'abc'
             D = 1
         x = X()
-        f = x | OATT | CLASS
-        r = (int, float, str)
-        expected_fonctor(self, f, r)
+        self.assertSetEqual(
+            x | valattrs | CLASS,
+            set((int, float, str))
+        )
 
     def test_Fonctor_without_hbds(self):
         class X: pass
-        expected_fonctor(self, X | ATT, [])
-        expected_fonctor(self, X() | CLASS, (X,))
-        expected_fonctor(self, X() | OATT, [])
+        self.assertSetEqual( X | attrs, set())
+        self.assertSetEqual( X() | CLASS, set((X,)))
+        self.assertSetEqual( X() | valattrs, set())
 
 if __name__ == '__main__':
     unittest.main() 

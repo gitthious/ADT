@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
-import enum, re
+from enum import Enum
+import re
+# TOD: remplacer datetime par un module plus cohérent!
 from datetime import datetime, date, time, timedelta
 
 class MaxInclusive:
@@ -67,58 +69,16 @@ class Percent(float):
         interval = Interval(0,1)
         interval(v)
         return v
-    
-# cf. https://stackoverflow.com/questions/4828080/how-to-make-an-immutable-object-in-python
-##class immutable(object):
-##    def __init__(self, immutable_params):
-##        self.immutable_params = immutable_params
-##
-##    def __call__(self, new):
-##        params = self.immutable_params
-##
-##        def __set_if_unset__(self, name, value):
-##            if name in self.__dict__:
-##                raise Exception("Attribute %s has already been set" % name)
-##
-##            if not name in params:
-##                raise Exception("Cannot create atribute %s" % name)
-##
-##            self.__dict__[name] = value;
-##
-##        def __new__(cls, *args, **kws):
-##            cls.__setattr__ = __set_if_unset__
-##
-##            return super(cls.__class__, cls).__new__(cls, *args, **kws)
-##
-##        return __new__
 
-##class Point(object):
-##    @immutable(['x', 'y'])
-##    def __new__(): pass
-##
-##    def __init__(self, x, y):
-##        self.x = x
-##        self.y = y
-##
-##class Point(tuple):
-##    __slots__ = []
-##    def __new__(cls, x, y):
-##        return tuple.__new__(cls, (x, y))
-##    @property
-##    def x(self):
-##        return tuple.__getitem__(self, 0)
-##    @property
-##    def y(self):
-##        return tuple.__getitem__(self, 1)
-##    def __getitem__(self, item):
-##        raise TypeError
+__all__ = [
+    'Enum',
+    'datetime', 'date', 'time', 'timedelta',
+    'PosInt',
+    'Percent',
+    ]
 
-# https://en.wikipedia.org/wiki/Immutable_object#Python
-##import collections
-##Point = collections.namedtuple('Point', ['x', 'y'])
 
-# A voir: annotations en python (typage?)
-# https://stackoverflow.com/questions/4204075/assignment-in-python
 
-##class Unit:
-##    pass
+
+
+              

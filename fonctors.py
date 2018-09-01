@@ -65,7 +65,7 @@ class Fonctor(object):
 
 IDENT = Fonctor()                          
 CLASS = Fonctor(type)
-ATT = Fonctor(getattrs)
-OATT = Fonctor(lambda obj: [getattr(obj,a) for a in getattrs(obj)])
+attrs = Fonctor(getattrs)
+valattrs = Fonctor(lambda obj: [getattr(obj,a) for a in getattrs(obj)])
 
     
