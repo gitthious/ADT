@@ -348,8 +348,9 @@ def keep_objects_relationship(cls):
     [<class 'ADT.hbds.X'>, <class 'ADT.hbds.Y'>]
 
     Usage of *__obj__* is just for tests. It's more pretty to use fonctor OBJ
-    >>> TerrainType | OBJ
-    {<class 'ADT.hbds.X'>, <class 'ADT.hbds.Y'>}
+    >>> L = TerrainType | OBJ  # product en set() with ungaranted order
+    >>> X in L and Y in L and len(L) == 2 # 
+    True
 
     Warning: decorator must be use only with classes
     with invariant number of instances because __del__ is not implemented!
@@ -405,14 +406,9 @@ class SemiCocircuit:
     # Attention:
     #   * pas d'héritage de liens
     #   * et confusion entre SC d'object et SC de type object
-
-    @classmethod
-    def create_semi_cocircuit(cls, attr):
-        if attr == "__nsc__":
-            return NegativeSemiCocircuit()
-        return PositiveSemiCocircuit()
         
-    def __init__(self):
+    def __init__(self, name):
+        self.name = name
         self.sc = []
         self.classvars = {}
 
@@ -423,37 +419,30 @@ class SemiCocircuit:
         
         if isinstance(obj, type):
             if obj not in self.classvars:
-                self.classvars[obj] = self.create_semi_cocircuit(self.attr)
+                self.classvars[obj] = SemiCocircuit(self.name)
             return self.classvars[obj].sc
 
-        if self.attr not in obj.__dict__:
-            obj.__dict__[self.attr] = self.create_semi_cocircuit(self.attr)
-        return obj.__dict__[self.attr].sc
+        if self.name not in obj.__dict__:
+            obj.__dict__[self.name] = SemiCocircuit(self.name)
+        return obj.__dict__[self.name].sc
 
     def __set__(self, obj, value):
-        raise AttributeError(self.attr + " are not settable")
-
-class PositiveSemiCocircuit(SemiCocircuit):
-    attr = "__psc__"
-
-class NegativeSemiCocircuit(SemiCocircuit):
-    attr = "__nsc__"
+        raise AttributeError(self.name + " are not settable")
 
 
 class Relation(Class):
 
     def __new__(cls, clsname, bases, clsdict):
         if '__cinit__' not in clsdict:
-            raise AttributeError("Relation must define the '__cinit__' class")
+            raise TypeError("Relation must define the '__cinit__' class")
         if '__cfin__' not in clsdict:
-            raise AttributeError("Relation must define the '__cfin__' class")
+            raise TypeError("Relation must define the '__cfin__' class")
         if '__cards__' not in clsdict:
             # set default cardinalities
             clsdict['__cards__'] = ((0,'m'),(0,'m'))
         def cut(self):
-            self.__oinit__.__psc__.remove(self)
-            self.__ofin__.__nsc__.remove(self)
-        clsdict['cut'] = cut
+            type(self).unlink_objects(self)
+        clsdict['cut'] = cut #lambda l: cls.unlink_objects(l)
 
         clsobj = Class.__new__(cls, clsname, bases, clsdict)
         return clsobj
@@ -462,10 +451,7 @@ class Relation(Class):
     def _make_init_method(cls, clsdict):
         code_body, code_args = cls._make_code_args(clsdict)
         code = 'def __init__(self, oinit, ofin, %s):\n' % ', '.join(code_args)
-        code_body += "    self.__oinit__ = oinit\n"
-        code_body += "    self.__ofin__ = ofin\n"
-        code_body += "    self.__oinit__.__psc__.append(self)\n"
-        code_body += "    self.__ofin__.__nsc__.append(self)\n"
+        code_body += "    type(self).link_objects(self, oinit, ofin)\n"
         code += code_body
         try:
             exec(code , globals(), clsdict)
@@ -475,17 +461,32 @@ class Relation(Class):
 
     def __init__(rel, name, bases, clsdict):
         super(Relation, rel).__init__(name, bases, clsdict)
-        assert rel.__cinit__ and rel.__cfin__
-        def init_sc(cls):
-            if not hasattr(cls, "__psc__"):
-                setattr(cls, "__psc__", PositiveSemiCocircuit())
-            if not hasattr(cls, "__nsc__"):
-                setattr(cls, "__nsc__", NegativeSemiCocircuit())
-        init_sc(rel.__cinit__)
-        rel.__cinit__.__psc__.append(rel)
-        init_sc(rel.__cfin__)
-        rel.__cfin__.__nsc__.append(rel)
+        rel.create_class_links()
+
+    @property
+    def cocircuit(clsrel):
+        return SemiCocircuit
+    
+    def create_class_links(clsrel):
+        for cls in (clsrel.__cinit__, clsrel.__cfin__):
+            for a in ('__psc__', '__nsc__'):
+                if not hasattr(cls, a):
+                    setattr(cls, a, clsrel.cocircuit(a))
+        clsrel.__cinit__.__psc__.append(clsrel)
+        clsrel.__cfin__.__nsc__.append(clsrel)
        
+    def link_objects(clsrel, objrel, oinit, ofin):
+        assert isinstance(objrel, clsrel)
+        objrel.__oinit__ = oinit
+        objrel.__ofin__ = ofin
+        objrel.__oinit__.__psc__.append(objrel)
+        objrel.__ofin__.__nsc__.append(objrel)
+
+    def unlink_objects(clsrel, objrel):
+        assert isinstance(objrel, clsrel)
+        objrel.__oinit__.__psc__.remove(objrel)
+        objrel.__ofin__.__nsc__.remove(objrel)
+        
 
 def create_relation(cinit, name, cfin):
     meta = {'metaclass': Relation, }
@@ -536,44 +537,4 @@ class Role:
 # Faire des relations ordered...et les foncteurs qui vont avec
 # Optimiser les foncteurs pour éviter de tous parcourir si pas nécessaire
 
-class Relation1_to_all(Class):
 
-    def __new__(cls, clsname, bases, clsdict):
-        if '__cinit__' not in clsdict:
-            raise AttributeError("Relation must define the '__cinit__' class")
-        if '__cfin__' not in clsdict:
-            raise AttributeError("Relation must define the '__cfin__' class")
-        if '__cards__' not in clsdict:
-            # set default cardinalities
-            clsdict['__cards__'] = ((1,'all'),(None,None))
-        def cut(self):
-            self.__oinit__.__psc__.remove(self)
-        clsdict['cut'] = cut
-        
-        clsobj = Class.__new__(cls, clsname, bases, clsdict)
-        return clsobj
-
-    @classmethod
-    def _make_init_method(cls, clsdict):
-        code_body, code_args = cls._make_code_args(clsdict)
-        code = 'def __init__(self, oinit, ofin, %s):\n' % ', '.join(code_args)
-        code_body += "    self.__oinit__ = oinit\n"
-        code_body += "    self.__ofin__ = ofin\n"
-        code_body += "    self.__oinit__.__psc__.append(self)\n"
-        code += code_body
-        try:
-            exec(code , globals(), clsdict)
-        except:
-            print(code)
-            raise
-
-    def __init__(rel, name, bases, clsdict):
-        super(Relation1_to_all, rel).__init__(name, bases, clsdict)
-        assert rel.__cinit__ and rel.__cfin__
-        def init_sc(cls):
-            if not hasattr(cls, "__psc__"):
-                setattr(cls, "__psc__", DictSemiCocircuit())
-        init_sc(rel.__cinit__)
-        rel.__cinit__.__psc__.append(rel)
-        init_sc(rel.__cfin__)
-        rel.__cfin__.__nsc__.append(rel)

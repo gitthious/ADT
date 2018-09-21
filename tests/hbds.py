@@ -707,8 +707,19 @@ class ReInitRelationTest(RelationTest):
         
         
 class RelationErrorsTest(unittest.TestCase):
-    pass
     
+    def test_cinit_cfin_undefined(self):
+        with self.assertRaises(TypeError):
+            class R(metaclass=Relation): pass
+        class X: pass
+        with self.assertRaises(TypeError):
+            class R(metaclass=Relation):
+                __cinit__ = X
+        with self.assertRaises(TypeError):
+            class R(metaclass=Relation):
+                __cfin__ = X
+
+        
 class RelationWithClassAttrTest(unittest.TestCase):
 
     def test_Fonctor_with_hbds(self):
