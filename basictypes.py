@@ -2,8 +2,45 @@
 
 from enum import Enum
 import re
-# TOD: remplacer datetime par un module plus cohérent!
-from datetime import datetime, date, time, timedelta
+# TODO: remplacer datetime par un module plus cohérent!
+from datetime import date, time, timedelta
+from datetime import datetime as pydatetime
+
+__all__ = [
+    'Enum',
+    'datetime', 'date', 'time', 'timedelta',
+    'PosInt',
+    'Percent',
+    'MaxInclusive', 'Interval', 'MinExclusive', 'MaxExclusive', 'MinInclusive',
+    'positive', 'negative',
+    'Regex', 'SizedString',
+    
+    ]
+
+class datetime(pydatetime):
+    def __new__(cls, *args, **kargs):
+        d = args[0]
+        if isinstance(d, str):
+            try:
+                d = cls.strptime(d, "%Y%m%dT%H%M%S")
+            except ValueError:
+                try:
+                    d = cls.strptime(d, "%Y-%m-%dT%H:%M:%S")
+                except ValueError:
+                    try:
+                        d = cls.strptime(d, "%Y-%m-%dT%H:%M:%SZ")
+                    except ValueError:
+                        d = cls.strptime(d, "%Y-%m-%d %H:%M:%S")
+            d = pydatetime.__new__(cls, d.year, d.month, d.day,
+                                   d.hour, d.minute, d.second)
+        elif isinstance(d, pydatetime):
+            d = pydatetime.__new__(cls, d.year, d.month, d.day, d.hour,
+                                   d.minute, d.second, d.microsecond, d.tzinfo)
+        else:
+            d = pydatetime.__new__(cls, *args, **kargs)
+        return d
+            
+
 
 class MaxInclusive:
     def __init__(self, max_value):
@@ -70,12 +107,6 @@ class Percent(float):
         interval(v)
         return v
 
-__all__ = [
-    'Enum',
-    'datetime', 'date', 'time', 'timedelta',
-    'PosInt',
-    'Percent',
-    ]
 
 
 

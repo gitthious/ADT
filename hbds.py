@@ -1,54 +1,14 @@
 # -*- coding: utf-8 -*-
 """
-The aim of this module is to provide Generic Abrastact Data Type (ADT) used to
+The aim of this module is to provide Abstract Data Type (ADT) used to
 describe Data Structure in Pythonic fashon.
 
-If you want to describe en USAdress data type, you can write:
-class USAddress:
-    state = ""
-    city = ""
-    street = ""
-    zipcode = None
-    country = ""
-
-This class is available in Python but you don't describe like this all structure
-contol you need, like it's possible for instance in xsd (XML Scheme).
-Thurethemore, when you create a instance you can write:
-
-u = USAdress() # and you instanciate it with any control.
-
-You can write again:
-
-u.city = 12
-USAdress.other = 13
-USAdress.city = 3; u = USAdress()
-print u.city
-3
-
-It's a nosense regards the definition you wanted first
-
-ADT module permite you to create USADRESS strong definition:
-
-import ADT
-class USAddress(metaclass=Class):
-    state = Attr(str)
-    city = Attr(str)
-    street = Attr(str)
-    zipcode = Attr(int,12)
-    country = Attr(str)
-
-All you can do in Python are available except that we come to see above.
-And all type controls are doing and raise a exception if not expected.
-
-u.city = 12
-raise TypeError: Bad type int of value 12 for Att 'city'. Expected type is 'str'
-
 TODO:
-    docstring __init__ automatiques
-    docstring des atts
-    raise explicite dans l'init généré des classes
+    module doc
+    automatic docstring in __init__ methods
+    docstring of atts
 
-Références:
+External references:
  * HBDS: http://pelle.stephane.free.fr/HBDSConseils.htm
  * https://rhettinger.wordpress.com/2011/05/26/super-considered-super/
  * https://blog.ionelmc.ro/2015/02/09/understanding-python-metaclasses/
@@ -56,22 +16,25 @@ Références:
  * module attrs (http://www.attrs.org/en/stable/)
  * module leaflet
  * module dataclasses (https://docs.python.org/3/library/dataclasses.html)
+   integrate in py3.7
 """
 
-import collections, sys, inspect, types, enum
-from .fonctors import getattrsfromdict, getattrs, Fonctor, IDENT, to_iterable
+import collections, types
+from .fonctors import getattrsfromdict, getattrs, Fonctor, to_iterable
 from .units import Unit
 
 class Att:
     """
-    Used to define a class attribute and then to get, if needed:
+    Used to define a class attribute to provide:
      * existing control
      * type control
      * default value
      * and also mandatory information, docstring and contrainst function.
-    at intance level.
+       at intance level.
     Att is a python descriptor, so must be use as class variable
     in class definition.
+
+    TODO: revoir les contraintes pour utiliser des méthodes
     """
     
     class required:
@@ -94,28 +57,25 @@ class Att:
         self.classvars = {}
             
     def __get__(self, instance, ownerclass):
-        #print('Att.__get__', self.name, instance, ownerclass)
         if instance is None:
-##            return ownerclass.__dict__[self.name]
             for c in ownerclass.__mro__:
                 if self.name in c.__dict__:
                     return c.__dict__[self.name]
-##            raise AttributeError("type object '%s' and all these mro" 
-##                                 "has no attribute '%s'" \
-##                                 % (ownerclass.__name__, self.name))
         if isinstance(instance, type):
             return self.classvars[instance]
         return instance.__dict__.get(self.name, self.default)
         
     def _validate(self, value):
-        if value is None: return value
+        if value is None:
+            return value
         # try to catch value with type
         if self.type:
             if not isinstance(value, self.type):
                 try:
                     value = self.type(value)
                 except (ValueError, TypeError):
-                    m = "'%s' for '%s'. Should be '%s'" % (value, self, self.type)
+                    m = "'%s' for '%s'. Should be '%s' instead of '%s'" \
+                        % (value, self, self.type, type(value))
                     raise TypeError(m)
         # try to apply contraint
         if self.constraint:
@@ -123,50 +83,25 @@ class Att:
         return value
     
     def __set__(self, instance, value):
-        #print('Att.__set__', instance, value)
         value = self._validate(value)
+        if value is None and self.mandatory:
+            raise ValueError("'%s' Att is mandatory. Can't be set to None" % self.name)
         if isinstance(instance, type):
             self.classvars[instance] = value 
         else:
             instance.__dict__[self.name] = value
         
     def __set_name__(self, cls, name):
-##        print("__set_name", cls, name)
         self.name = name
         
     def __repr__(self):
-        s = "%s = Att(type=%s, default=%s, mandatory=%s)"
-        return s % (self.name, self.type, self.default, self.mandatory)
-
-def create_Att(*vals):
-    """
-    Return an *Att* instance from tuple *vals*.
-    The tuple is interpreted as parameters of Att in any order
-    and it may be empty.
-    If tuple does'nt respect Att params, **AttributeError** is raised.
-    """
-    if len(vals) > 4:
-        raise TypeError("Too many args for Att (%d). Must be 4 max" % len(vals))
-
-    # because order is not important, so re-order vals
-    typ, default, mandatory, unit = None, None, not Att.required, None
-    # manque des tests car il peut y avoir 4 valeurs sans Unit par ex.
-    for v in vals:
-        #print(v)
-        if v is Att.required: mandatory = v
-        elif isinstance(v, Unit): unit = v
-        elif isinstance(v, type): typ = v
-        else: default = v
-        #print(typ, default, mandatory, unit)
-
-    # vals is already a Att
-    if isinstance(default, (Att, ComposedAtt)):
-        if len(vals) != 1:
-            raise TypeError("Too many Att definition (%d). Use just one" % len(vals))
-        return default
-
-    return Att(typ, default, mandatory, unit=unit)
-
+        s = "<Att(type=%s, default=%s, mandatory=%s)>" \
+            % (self.type, self.default, self.mandatory)
+        if self.name is None:
+            s = "Not named " + s
+        else:
+            s += "named %s" % self.name
+        return s
 
 class ComposedAtt:
     
@@ -190,19 +125,82 @@ class ComposedAtt:
         self._class.__name__ = "%s_%s" % (self.__class__.__name__, name)
 
 
-# Faire une ClassWithInit?: pas sûr que cela soit utile
-
 class Class(type):    
-        
-    def __new__(cls, clsname, bases, clsdict):
-        #print('Class.__new__', cls, clsname, bases, clsdict)
-        cls._make_attributes(clsname, clsdict)
-        if Class not in [c for b in bases for c in b.__mro__]:
-            cls._make_init_method(clsdict)
-        
+
+    # We use 'clsnamespace' for dictionary product par the interpreter to init
+    # a new class. In python doc, we find 'namespace'. In litterature we
+    # could find 'clsdict' or also 'attrs'.
+    
+    @classmethod
+    def __prepare__(mcls, name, bases, **kwds):
+        # be sure namespace of a new class will keep order of declaration
+        return collections.OrderedDict()
+    
+    def __new__(mcls, clsname, bases, clsnamespace):
+        # Warning: clsnamespace MUST BE modified directly
+        # It's impossible to use an other dict or a copy
+        # else __new__ doesn't run!
+        # all (implicit!) explanations are available in python doc metaclass
+
+        # transform python public attributes (and that not method)
+        # of the new class to an Att if needed
+        for public_att in getattrsfromdict(clsnamespace):
+            val = clsnamespace[public_att]
+
+            # to detect embeded class definitions as
+            # class C(metclass=Class):
+            #   class X(metaclass=Class):  et class X tout cours?
+            if isinstance(val, Class): continue
+
+            val = to_iterable(val)
+            clsnamespace[public_att] = create_Att(*val)
+
+        # if the new class is not a child of Class,
+        # we will make the __init__ method
+        parent_classes = [c for b in bases for c in b.__mro__]
+        if Class not in parent_classes:
+            
+            # we create an ordered dictionnary of all inherited Att,
+            # indexed by base classes...
+            up_attrs_by_bases = collections.OrderedDict()
+            for b in bases:
+                if b is object: continue
+                up_attrs_by_bases[b] = collections.OrderedDict([ \
+                (a,getattr(b,a)) for a in getattrs(b) \
+                if isinstance(getattr(b,a), Att)] )
+
+            # ... and an another just for new class
+            attrs = collections.OrderedDict([(a,clsnamespace[a]) for a in clsnamespace \
+                                             if isinstance(clsnamespace[a], Att)])
+
+            # these will be usefull for create __init__ method
+            code = mcls._make_init_method(up_attrs_by_bases, attrs)
+
+            # we try to add the __init__ method to new class namespace
+            # using 'exec' (please (re)read python doc of metaclass)
+            try:
+                # __init__ must have the form, for example:
+                # class Z(Y, T):
+                #    def __init__(self, x=Y.x, y=Y.y, z=z, t=T.t):
+                #       Y.__init__(self, x, y)
+                #       T.__init__(self, t)
+                #       ...
+                # Pb is Y and T are just accessible from scope where Z
+                # is defined. It can be not necessary global
+                # So we set local variables with all base classes
+                # to bind names with base classes from locals()
+                # I spent a lot of time to find this!
+                for i,b in enumerate(bases):
+                    exec("%s = bases[i]" % b.__name__)
+                exec(code , locals(), clsnamespace)
+            except SyntaxError as e:
+                e.msg = make_readable_SyntaxError(code, e)
+                raise e
+
+        # then we make a instance __setattr__ method
+        # to avoid set of undeclare attribute at new class instance level
         def fset(instance, att, val):
-            #print("%s.__setattr__(fset)" % type(instance).__name__, instance, att, val)
-            if not att.startswith('_'):
+            if not att.startswith('_'): # TODO: why do we need private att?
                 if not hasattr(type(instance), att):
                     m = "Class instance '%s' has no Att '%s'"
                     raise AttributeError(m % (instance, att))
@@ -210,13 +208,13 @@ class Class(type):
                 type.__setattr__(instance, att, val)
             else:
                 object.__setattr__(instance, att, val)
-        clsdict['__setattr__'] = fset
+        clsnamespace['__setattr__'] = fset
 
-        clsobj = type.__new__(cls, clsname, bases, clsdict)
-        return clsobj        
+        # and finally with create the new class
+        newcls = super().__new__(mcls, clsname, bases, clsnamespace)
+        return newcls
     
     def __setattr__(cls, att, val):
-        #print("Class.__setattr__", cls, att, val)
         if not att.startswith('_'):
             if not hasattr(type(cls), att):
                 m = "Class type '%s' has no Att '%s'"
@@ -226,59 +224,89 @@ class Class(type):
         type.__setattr__(cls, att, val)
         
     @classmethod
-    def _make_attributes(cls, clsname, clsdict):
+    def _make_init_method(mcls, up_attrs_by_bases, attrs):
+        args = make_code_args(up_attrs_by_bases, attrs)
+        if args == "": return ""
+        code = """def __init__(self, %s):\n""" % args
+
+        for b in up_attrs_by_bases:
+            attnames = [a for a in up_attrs_by_bases[b]]
+            code += "    %s.__init__(self, %s)\n" % (b.__name__, ', '.join(attnames))
+
+        code += make_attrs_init(attrs)
+
+        return code
+
         
-        for att in getattrsfromdict(clsdict):
-            val = clsdict[att]
-
-            # to detect embeded class definitions as
-            # class C(metclass=Class):
-            #   class X(metaclass=Class):  et class X tout cours?
-            if inspect.isclass(val) and isinstance(val, Class): continue
-
-            if not isinstance(val, tuple): val = (val,)
-            clsdict[att] = create_Att(*val)
-
-            # pas utile à priori
-            if not isinstance(clsdict[att], (Att, ComposedAtt)):
-                raise TypeError("Attribute must be of type 'Att'")
-
-
-    @classmethod
-    def _make_init_method(cls, clsdict):
-        #print('_make_init_method', cls, clsdict)
-        code_body, code_args = cls._make_code_args(clsdict)
-        if len(code_args) == 0: return
-        code = 'def __init__(self, %s):\n' % ', '.join(code_args)
-        code += code_body
-        #print(code)
-        try:
-            exec(code , globals(), clsdict)
-        except:
-            print(code)
-            raise
+def make_code_args(up_attrs_by_bases, attrs):
+    code_args = []
+    for b in up_attrs_by_bases:
+        for a in up_attrs_by_bases[b]:
+            att = up_attrs_by_bases[b][a]
+            code_args.append(make_code_arg(a, att, b.__name__))
+    for a in attrs:
+        code_args.append(make_code_arg(a, attrs[a]))
         
-    @classmethod
-    def _make_code_args(cls, clsdict):
-        attrs = [a for a in clsdict if isinstance(clsdict[a], Att)]
-        code_args = []
-        code_body = ""
-        for attr in attrs:
-            att = clsdict[attr]
-            if att.default is not None:
-                code = "%s=%s.default" % (attr, attr)
-            else:
-                if att.mandatory:
-                    code = "%s" %(attr)
-                else:
-                    code = "%s=None" % (attr)            
-            code_args.append(code)
-            code_body += '    self.%s = %s\n' % (attr, attr)
-        return code_body, code_args
+    args = ', '.join(code_args)
+    return args
+
+def make_code_arg(attname, att, basename=""):
+    codebase = "%s." % basename if basename != "" else ""
+    if att.default is not None:
+        code = "%s=%s%s.default" % (attname, codebase, attname)
+    elif att.mandatory:
+        code = attname
+    else:
+        code = "%s=None" % attname        
+    return code
+    
+def make_attrs_init(attrs):
+    return ''.join(['    self.%s = %s\n' % (a, a) for a in attrs])
+
+
+def make_readable_SyntaxError(code, exception):
+    msg = exception.msg
+    msg += " line %d in dynamic created __init__\n" % exception.lineno
+    for n, l in enumerate(code.splitlines()):
+        msg += ''.join(["%2d: %s\n" % (n+1,l) ])
+        if n+1 == exception.lineno:
+            msg += "%s^\n" %(' '*(exception.offset+3)) # the 2 line number + ':'
+    return msg
+
+
+
+def create_Att(*vals):
+    """
+    Return an *Att* instance from tuple *vals*.
+    The tuple is interpreted as parameters of Att in any order
+    and it may be empty.
+    If tuple does'nt respect Att params, **AttributeError** is raised.
+
+    TODO: add contrainsts
+    """
+    if len(vals) > 4:
+        raise TypeError("Too many args for Att (%d). Must be 4 max" % len(vals))
+
+    # because order is not important, so re-order vals
+    typ, default, mandatory, unit = None, None, not Att.required, None
+    # manque des tests car il peut y avoir 4 valeurs sans Unit par ex.
+    for v in vals:
+        if v is Att.required: mandatory = v
+        elif isinstance(v, Unit): unit = v
+        elif isinstance(v, type): typ = v
+        else: default = v
+
+    # vals is already a Att
+    if isinstance(default, (Att, ComposedAtt)):
+        if len(vals) != 1:
+            raise TypeError("Too many Att definition (%d). Use just one" % len(vals))
+        return default
+
+    return Att(typ, default, mandatory, unit=unit)
 
 def create_class(name, attr_defs):
     """
-    Return class from *name* and *attr_defs* dictinary.
+    Return class from *name* and *attr_defs* dictionary.
     Do the same thing as instruction:
     class X(metaclass=Class):
         a1 = Att(int, 1)
@@ -432,35 +460,38 @@ class SemiCocircuit:
 
 class Relation(Class):
 
-    def __new__(cls, clsname, bases, clsdict):
-        if '__cinit__' not in clsdict:
+    def __new__(mcls, clsname, bases, clsnamespace):
+        if '__cinit__' not in clsnamespace:
             raise TypeError("Relation must define the '__cinit__' class")
-        if '__cfin__' not in clsdict:
+        if '__cfin__' not in clsnamespace:
             raise TypeError("Relation must define the '__cfin__' class")
-        if '__cards__' not in clsdict:
+        if '__cards__' not in clsnamespace:
             # set default cardinalities
-            clsdict['__cards__'] = ((0,'m'),(0,'m'))
+            clsnamespace['__cards__'] = ((0,'m'),(0,'m'))
         def cut(self):
             type(self).unlink_objects(self)
-        clsdict['cut'] = cut #lambda l: cls.unlink_objects(l)
+        clsnamespace['cut'] = cut #lambda l: mcls.unlink_objects(l)
 
-        clsobj = Class.__new__(cls, clsname, bases, clsdict)
+        clsobj = Class.__new__(mcls, clsname, bases, clsnamespace)
         return clsobj
 
     @classmethod
-    def _make_init_method(cls, clsdict):
-        code_body, code_args = cls._make_code_args(clsdict)
-        code = 'def __init__(self, oinit, ofin, %s):\n' % ', '.join(code_args)
-        code_body += "    type(self).link_objects(self, oinit, ofin)\n"
-        code += code_body
-        try:
-            exec(code , globals(), clsdict)
-        except:
-            print(code)
-            raise
+    def _make_init_method(mcls, up_attrs_by_bases, attrs):
+        args = make_code_args(up_attrs_by_bases, attrs)
+        if args == "":
+            code = """def __init__(self, oinit, ofin):\n"""
+        else:
+            code = """def __init__(self, oinit, ofin, %s):\n""" % args
+        code += "    type(self).link_objects(self, oinit, ofin)\n"
+        for b in up_attrs_by_bases:
+            attnames = [a for a in up_attrs_by_bases[b]]
+            code += "    %s.__init__(self, %s)\n" % (b.__name__, ', '.join(attnames))
 
-    def __init__(rel, name, bases, clsdict):
-        super(Relation, rel).__init__(name, bases, clsdict)
+        code += make_attrs_init(attrs)
+        return code
+    
+    def __init__(rel, name, bases, clsnamespace):
+        super(Relation, rel).__init__(name, bases, clsnamespace)
         rel.create_class_links()
 
     @property

@@ -22,6 +22,7 @@ les foncteurs:
        IDENT(X) | OBJ | OPSC(R) | OFIN => mieux car introduit une nouvelle syntaxe pour un nx d'abstraction sup.
        X.OBJ.OPSC(R).OFIN
 
+TODO: add ordered fonctors
 """
 
 import collections, inspect
@@ -29,10 +30,35 @@ import collections, inspect
 def getattrsfromdict(dic):
     return [attr for attr in dic \
             if not attr.startswith('_') \
-            and not inspect.isroutine(dic[attr])]
+            and not inspect.isroutine(dic[attr]) \
+            and not isinstance(dic[attr], property)]
     
-def getattrs(obj):
-    return getattrsfromdict(dict(inspect.getmembers(obj)))
+def getattrs(obj, follow_mro=True):
+    """
+    Return names of public attributes of *obj* throught class hierarchy and
+    in respect of declaration order. If obj is a class, *names* are class attributes.
+    """
+    if obj in (object, type): return []
+    obj_attrs = getattrsfromdict(obj.__dict__)
+    class_attrs = []
+    cls = obj if isinstance(obj, type) else type(obj)
+    if follow_mro:
+        try:
+            class_attrs += getattrs(cls.mro()[1], follow_mro)
+        except TypeError: # If we want mro of class of class!
+            pass
+    class_attrs += getattrsfromdict(cls.__dict__)
+
+    i =  0
+    for a in class_attrs:
+        if a in obj_attrs:
+            i += 1
+            continue
+        obj_attrs.insert(i, a)
+        i += 1
+
+    return obj_attrs
+    
 
 def to_iterable(obj):
     """Return obj as an inmutable iterable if necessary, except for str.

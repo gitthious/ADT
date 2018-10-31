@@ -2,7 +2,7 @@
 
 import unittest
 from ADT.basictypes import Enum, date, datetime
-from ADT.fonctors import CLASS
+from ADT.fonctors import CLASS, getattrs
 from ADT.hbds import *
 from ADT import units
 
@@ -85,8 +85,12 @@ class AttTest(unittest.TestCase):
         pass
 
     def test_mandatory(self):
-        # not tested
-        pass
+        class Y:
+            A = Att(int, 1, Att.required)
+        y = Y(); y.A = 5
+        with self.assertRaises(ValueError):
+            y.A = None
+        
 
 class CreateAttTest(unittest.TestCase):
         
@@ -359,9 +363,24 @@ class ClassAndAttrTest(unittest.TestCase):
             self.X.z = 12
                                 
     def test_att_heritance(self):
-        class Y(self.X): pass
+        class Y(self.X):
+            g = 12
         y = Y()
         self.assertIsNone(y.i)
+        self.assertEqual(y.g, 12)
+        y = Y(g=13)
+        self.assertIsNone(y.i)
+        self.assertEqual(y.g, 13)
+        class Z(Y):
+            h = 120
+        z = Z()
+        self.assertIsNone(z.i)
+        self.assertEqual(z.g, 12)
+        self.assertEqual(z.h, 120)
+        z = Z(g=13, h=130)
+        self.assertIsNone(z.i)
+        self.assertEqual(z.g, 13)
+        self.assertEqual(z.h, 130)
         
 class ComposedAttTest(unittest.TestCase):
     def setUp(self):
@@ -836,10 +855,10 @@ def load_tests(loader, standard_tests, pattern):
     return standard_tests
 
 if __name__ == '__main__':
-    unittest.main(
+    unittest.main(#verbosity=2
 ##        defaultTest=(
-####        'ClassRoleTest.test_role_in_class_of_class',
-##            'CreateAttTest',
+##        'ClassAndAttrTest.test_att_type',
+##        'ClassAndAttrTest.test_att_heritance',
 ##            )
         )
     

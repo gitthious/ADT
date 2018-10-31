@@ -46,6 +46,19 @@ class TestBasicMixin(unittest.TestCase):
             PosInt('a')
         with self.assertRaises(ValueError):
             PosInt(-1)
-            
+
+class Testdatetime(unittest.TestCase):
+    def test_str(self):
+        D = datetime(2016,5,30, 9, 55, 0)
+        d = datetime('2016-05-30 09:55:00')
+        self.assertEqual(d, D)
+        d = datetime('20160530T095500')
+        self.assertEqual(d, D)
+        d = datetime('2016-05-30T09:55:00')
+        self.assertEqual(d, D)
+        d = datetime('2016-05-30T09:55:00Z')
+        self.assertEqual(d, D)
+        
+        
 if __name__ == '__main__':
     unittest.main() 

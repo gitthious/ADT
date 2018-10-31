@@ -6,10 +6,11 @@ from ADT.fonctors import *
 class HelperFunctionsTest(unittest.TestCase):
     def test_getattrsfromdict(self):
         def f(): pass
-        attrs = getattrsfromdict({'i': 1, 'f':f, '_p':'xx'})
-        self.assertEqual( len(attrs), 1)
-        for attr in attrs:
-            self.assertIn( attr, ["i", ])
+        class X:
+            @property
+            def p(self): pass
+        attrs = getattrsfromdict({'i': 1, 'f':f, '_p':'xx', 'p': X.p})
+        self.assertListEqual(attrs, ['i'])
         
     def test_getattrs_of_a_class(self):
         class X:
@@ -20,10 +21,17 @@ class HelperFunctionsTest(unittest.TestCase):
             def m(self): pass
             @classmethod
             def cm(cls): pass
-        attrs = getattrs(X)
-        self.assertEqual( len(attrs), 4)
-        for attr in attrs:
-            self.assertIn( attr, ["i", "f", "s", "x"])
+        self.assertListEqual( getattrs(X), ["i", "f", "s", "x"] )
+
+    def test_get_inherited_attrs_of_a_class(self):
+        class Y:
+            i = 1
+            f = 12.3
+        class X(Y):
+            s = "ss"
+            x = None
+            def m(self): pass
+        self.assertListEqual( getattrs(X, True), ["i", "f", "s", "x"] )
 
     def test_getattrs_of_an_object(self):
         class X:
@@ -33,10 +41,18 @@ class HelperFunctionsTest(unittest.TestCase):
             x = None
             def m(self): pass
         x = X()
-        attrs = getattrs(x)
-        self.assertEqual( len(attrs), 4)
-        for attr in attrs:
-            self.assertIn( attr, ["i", "f", "s", "x"])
+        self.assertListEqual( getattrs(x), ["i", "f", "s", "x"] )
+
+    def test_get_inherited_attrs_of_an_object(self):
+        class Y:
+            i = 1
+            f = 12.3
+        class X(Y):
+            s = "ss"
+            x = None
+            def m(self): pass
+        x = X()
+        self.assertListEqual( getattrs(x, True), ["i", "f", "s", "x"] )
     
 class FonctorBaseTest(unittest.TestCase):
     def test_base(self):
@@ -111,4 +127,8 @@ class FonctorClassTest(unittest.TestCase):
         self.assertSetEqual( X() | valattrs, set())
 
 if __name__ == '__main__':
-    unittest.main() 
+    unittest.main(
+##        defaultTest=(
+##            'HelperFunctionsTest.test_getattrsfromdict'
+##            )
+        )
