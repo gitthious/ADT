@@ -93,8 +93,9 @@ class FonctorClassTest(unittest.TestCase):
         self.assertEqual(len(f), 4)
 
     def test_Fonctor_CLASS_ATTR(self):
-        f = (1,2.2,3,4,'a')| CLASS | attrs 
-        self.assertEqual(len(f), 4)
+        f = (1,2.2,3,4,'a')| CLASS | attrs
+        r = set(('denominator', 'real', 'numerator', 'imag'))
+        self.assertSetEqual(f, r)
 
     def test_FonctorObjectAttr(self):
         class X:
@@ -106,6 +107,22 @@ class FonctorClassTest(unittest.TestCase):
         self.assertSetEqual(
             x | valattrs,
             set((1, 1.3, 'abc'))
+        )
+
+    def test_FonctorObjectNamedAttr(self):
+        class X:
+            A = 1
+            B = 1.3
+            C = 'abc'
+            D = 1
+        class Y:
+            A = 12
+            D = "x"
+            Z = 23.3
+        x = X(); y1 = Y(); y2 = Y(); y2.D = "zz"
+        self.assertSetEqual(
+            (x, y1, y2) | valattrs(('A', 'D')),
+            set((1, 12, 'x', "zz"))
         )
         
     def test_FonctorObjectAttr_CLASS(self):
@@ -120,6 +137,21 @@ class FonctorClassTest(unittest.TestCase):
             set((int, float, str))
         )
 
+    def test_OBJOF(self):
+        class X: pass
+        class Y: pass
+        class Z: pass
+        x1 = X(); y = Y(); z = Z(); x2 = X()
+        O = (x1, y, z, x2)
+        self.assertSetEqual(
+            O | OBJOF(X, Y),
+            set((x1, y, x2))
+        )
+        self.assertSetEqual(
+            O | OBJOF(X),
+            set((x1, x2))
+        )
+        
     def test_Fonctor_without_hbds(self):
         class X: pass
         self.assertSetEqual( X | attrs, set())

@@ -543,6 +543,14 @@ class ClassOfClassTest(unittest.TestCase):
         self.Y.n = "Y"; self.X.n = "X"
         self.assertEqual(self.Y.n, "Y")
         self.assertEqual(self.X.n, "X")
+        with self.assertRaises(AttributeError):
+            self.Y.m = ""
+
+    def test_already_declare_att_in_metaclass(self):
+        class Z(metaclass=self.YT): 
+            n = "x"
+        with self.assertRaises(TypeError):
+            Z()
 
     def test_link_between_classes_of_class(self):
         class XT(Class, metaclass=Class): pass
@@ -739,9 +747,9 @@ class RelationErrorsTest(unittest.TestCase):
                 __cfin__ = X
 
         
-class RelationWithClassAttrTest(unittest.TestCase):
+class FonctorClassAttrTest(unittest.TestCase):
 
-    def test_Fonctor_with_hbds(self):
+    def test_Fonctor_ATT_OATT(self):
         class X(metaclass=Class):
             a = Att(int)
             b = Att(float)
@@ -753,7 +761,10 @@ class RelationWithClassAttrTest(unittest.TestCase):
 
         self.assertSetEqual( X() | OATT, set((None, 'sss', True)))
         self.assertSetEqual(X() | OATT | CLASS, set((type(None), str, bool)))
-        
+
+    def test_Fonctor_OATT_with_attrs(self):
+        pass
+    
 class FonctorRelationTest(unittest.TestCase):
     def setUp(self):
         class XC(metaclass=Class):

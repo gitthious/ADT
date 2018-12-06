@@ -92,6 +92,21 @@ class Fonctor(object):
 IDENT = Fonctor()                          
 CLASS = Fonctor(type)
 attrs = Fonctor(getattrs)
-valattrs = Fonctor(lambda obj: [getattr(obj,a) for a in getattrs(obj)])
+
+def getvalattrs(obj, attrnames=[]):
+    if len(attrnames) != 0:
+        return [getattr(obj,a) for a in obj | attrs  if a in attrnames]
+    else:
+        return [getattr(obj,a) for a in obj | attrs]
+    
+valattrs = Fonctor(getvalattrs)
+
+# Return objects that belong to classes
+OBJOF = Fonctor(lambda obj, *classes: obj if isinstance(obj, classes) else [])
+
+
+
+
+
 
     

@@ -20,8 +20,36 @@ External references:
 """
 
 import collections, types
-from .fonctors import getattrsfromdict, getattrs, Fonctor, to_iterable
+from .fonctors import (getattrsfromdict, getattrs,
+                      Fonctor, to_iterable, getvalattrs,
+                      valattrs, OBJOF, attrs)
 from .units import Unit
+
+__all__ = (
+    'Att',
+    'create_Att',
+    'ComposedAtt',
+    'Class',
+    'ATT',
+    'OATT',
+    'raise_init',
+    'OBJ',
+    'keep_objects_relationship',
+    'Relation',
+    'create_relation',
+    'Link',
+    'PSC',
+    'NSC',
+    'INIT',
+    'FIN',
+    'OPSC',
+    'OPSCR',
+    'ONSC',
+    'ONSCR',
+    'OINIT',
+    'OFIN',
+    'Role',
+    )
 
 class Att:
     """
@@ -62,7 +90,13 @@ class Att:
                 if self.name in c.__dict__:
                     return c.__dict__[self.name]
         if isinstance(instance, type):
-            return self.classvars[instance]
+            try:
+                return self.classvars[instance]
+            except KeyError as e:
+                msg = "type '%s' use class var already define in its metaclass" \
+                      % instance
+                # cf. tests.hbds.ClassOfClassTest.test_already_declare_att_in_metaclass
+                raise TypeError(msg)
         return instance.__dict__.get(self.name, self.default)
         
     def _validate(self, value):
@@ -320,23 +354,9 @@ def create_class(name, attr_defs):
             clsdic[att] = val
     return types.new_class(name, kwds=meta, exec_body=update)
 
-def getATT(cls):
-    assert isinstance(cls, type)
-    A = []
-    for a in getattrs(cls):
-        v = getattr(cls, a)
-        if isinstance(v, Att):
-            A.append(v)
-    return A
-ATT = Fonctor(getATT) 
+ATT = Fonctor(lambda cls: cls | valattrs | OBJOF(Att))
 
-def getOATT(obj):
-    A = []
-    for a in getattrs(type(obj)):
-        if isinstance(getattr(type(obj), a), Att):
-            A.append(getattr(obj,a))
-    return A
-OATT = Fonctor(getOATT)
+OATT = Fonctor(lambda obj: [getattr(obj, a.name) for a in type(obj) | ATT])
 
 def raise_init(cls):
     """
@@ -551,7 +571,6 @@ ONSCR = Fonctor(onsc)
 OINIT = Fonctor(lambda r: r.__oinit__)
 OFIN = Fonctor(lambda r: r.__ofin__)
 
-# définir aussi le foncteur OBJ
 
 class Role:
 # Role doit dériver de Att
