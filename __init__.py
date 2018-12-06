@@ -34,5 +34,5 @@ Il propose 3 modules:
 01/06/2018, 0.2: passage sous py3 et GitHub
 
 """
-
+name = "ADT"
 
