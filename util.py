@@ -1,127 +1,124 @@
 # -*- coding: utf-8 -*-
 """
-Created on Fri Sep 04 19:54:28 2015
-
-@author: Thierry
+Utilitaires utilisant hbds ou non.
 """
 
-from functools import wraps
+import collections, warnings
+from . import hbds
 
-#def wrap_method(cls, wrapped_method_name, function, *args, **kargs):
-##    @decorator    
-#    def wrapper(obj, *args, **kargs):
-#        function(obj, *args, **kargs)
-#        return wrapped_method(obj,*args, **kargs)
-#    if hasattr(cls, wrapped_method_name):
-#        wrapped_method = getattr(cls, wrapped_method_name)
-##        setattr(cls, wrapped_method_name, wrapper(wrapped_method)(*args, **kargs))
-#        setattr(cls, wrapped_method_name, wraps(wrapped_method, assigned=[])(wrapper))
-#    else:
-#        setattr(cls, wrapped_method_name, function)
-#    
-#from decorator import decorator
+__all__ = (
+    "Cache",
+    )
 
-from operator import itemgetter
-from itertools import groupby
-
-def groups_of_continuous_numbers(L):
-    # see recipe in http://stackoverflow.com/questions/2154249/identify-groups-of-continuous-numbers-in-a-list
-    return [map(itemgetter(1), g) for k, g in groupby(enumerate(L), lambda (i,x):i-x)]
-# print f((1, 3, 4, 5, 8,9, 10, 11, 100,101))
-# >>> [[1], [3, 4, 5], [8, 9, 10, 11], [100, 101]]
-
-def extensionmethod(cls, name=None, decorator=None, alias=None, new_name=None):
-    """Function decorator that extends base with the decorated
-    function.
-
-    Keyword arguments:
-    :param T base: Base class to extend with method
-    :param string name: Name of method to set
-    :param Callable decorator: Additional decorator e.g staticmethod
-
-    :returns: A function that takes the class to be decorated.
-    :rtype: func -> func
+class Cache(collections.MutableSet):
     """
+    Implémente un *cache d'objet* comme un *set* python.
+    Si un objet est ajouté dans le *cache*, sa classe sera instrumentée
+    pour réagir à la modification des attributs (setattr)
+    Si cet objet est un objet hbds, il sera également instrumenté
+    pour réagir à la création des relations entre objets.
 
-    def inner(func):
-        """This function is returned by the outer extensionmethod()
+    Par exemple, on définit 2 classes HBDS reliées entre elles:
 
-        :param types.FunctionType func: Function to be decorated
-        """
+    >>> class Humain(metaclass=hbds.Class):
+    ...     nom = str
+    >>> class Voiture(metaclass=hbds.Class):
+    ...     type = str
+    >>> possede = hbds.Link(Humain, 'possede', Voiture)
 
-        func_names = [name or func.__name__]
-        if alias:
-            aliases = alias if isinstance(alias, list) else [alias]
-            func_names += aliases
+    Puis on crée des instances
 
-        func = decorator(func) if decorator else func
+    >>> h1 = Humain("Jean"); h2 = Humain("Paul")
 
-        for func_name in func_names:
-            if new_name:
-                setattr(cls, new_name, getattr(cls, func_name))
-            setattr(cls, func_name, func)
-        return func
-    return inner
+    Que l'on ajoute à un cache
 
+    >>> cache = Cache((h1, h2))
 
-def extensionclassmethod(cls, name=None, alias=None):
-    """Function decorator that extends base with the decorated
-    function as a class method.
+    Toutes les modifications des attributs et des relations seront notifées:
 
-    Keyword arguments:
-    :param T base: Base class to extend with classmethod
-    :param string name: Name of method to set
+    >>> h1.nom = "Jean-Paul"
+    >>> h2.nom = "Pierre-Paul"
+    >>> v1 = Voiture("X"); v2 = Voiture("Y")
+    >>> p1 = possede(h1, v1); p2 = possede(h2, v2)
 
-    :returns: A function that takes the class to be decorated.
-    :rtype: func -> func
-    """
-
-    return extensionmethod(cls=cls, name=name, decorator=classmethod,
-                           alias=alias)
-
-if __name__ == "__main__":
-    import unittest
-    class Test(unittest.TestCase):
-        def test_extended_method_lambda(self):
-            class X:
-                pass
-            @extensionmethod(X, alias="m")
-            def f(self, a):
-                return a
-            x = X()
-            self.assertEqual(x.f(2), 2)
-            self.assertEqual(x.m(3), 3)
-
-        def test_extended_undefined_method_init(self):
-            class X:
-                pass
-            @extensionmethod(X, '__init__')
-            def init(self):    
-                self.i = 1
-            x = X()
-            self.assertEqual(x.i, 1)
-
-        def test_extended_redefined_method_init(self):
-            class X(object):
-                def __init__(self):
-                    self.a = 2        
-            @extensionmethod(X, '__init__', new_name="init")
-            def init(self,i):
-                self.i = i
-                self.init()
-            x = X(1)
-            self.assertEqual(x.i, 1)
-            self.assertEqual(x.a, 2)
-
-        def test_extended_classmethod(self):
-            class X(object):
-                def __init__(self, a):
-                    self.a = a        
-            @extensionclassmethod(X,'create')
-            def create(cls):
-                return cls(4)
-            x = X.create()
-            self.assertEqual(x.a, 4)
     
-    unittest.main()
+    """
+    _caching_types = {}
+    _caches = []
+    def __init__(self, iterable=[]):
+        self._cache = set(iterable)
+        self._caches.append(self)
+
+    def __contains__(self, obj):
+        return obj in self._cache
+    def __iter__(self):
+        return iter(self._cache)
+    def __len__(self):
+        return len(self._cache)
+    def __del__(self):
+        self._caches.remove(self)
+    
+    def add(self, obj):
+        self._cache.add(obj)
+        self._instrument(obj)
+        
+    def discard(self, obj):
+        self._cache.discard(obj)
+        self._uninstrument(obj)
+    
+    def _instrument(self, obj):
+        cls = type(obj)
+        if cls in self._caching_types: return
+        
+        oldfset =  cls.__setattr__
+        def fset(instance, attr, value):
+            oldvalue = getattr(instance, attr, None)
+            for cache in Cache._caches:
+                if instance in cache: 
+                    cache.before_setattr(instance, attr, oldvalue )
+            oldfset(instance, attr, value)
+            for cache in Cache._caches:
+                if instance in cache: 
+                    cache.after_setattr(instance, attr, value)
+
+        cls.__setattr__ = fset
+        self._caching_types[cls] = oldfset
+
+        for R in (cls | hbds.PSC).union( cls | hbds.NSC): # relations in & out
+            oldinit = R.__init__
+            def init(rel, *args, **kargs):
+                oldinit(rel, *args, **kargs)
+                self.link(type(rel), args[0], args[1])
+            R.__init__ = init
+            oldcut = R.cut
+            def cut(rel):
+                oinit = rel.__oinit__
+                ofin = rel.__ofin__
+                oldcut(rel)
+                self.unlink(type(rel), oinit, ofin)
+            type.__setattr__(R, 'cut', cut) # R.cut = cut
+                
+
+    def before_setattr(self, obj, attr, old_value):
+        warnings.warn("Cache before_setattr() is not Implemented")
+        # do nothing in default implementation
+
+    def after_setattr(self, obj, attr, new_value):
+        warnings.warn("Cache after_setattr() is not Implemented")
+        # do nothing in default implementation
+
+    def link(self, relcls, oinit, ofin):
+        warnings.warn("Cache link() is not Implemented")
+        # do nothing in default implementation
+
+    def unlink(self, relcls, oinit, ofin):
+        warnings.warn("Cache unlink() is not Implemented")
+        # do nothing in default implementation
+    
+    def _uninstrument(self, obj):
+        if len([o for cache in Cache._caches for o in cache \
+                if type(o) is type(obj)]) == 0:
+            fset = self._caching_types[type(obj)]
+            type(obj).__setattr__ = fset
+        
 

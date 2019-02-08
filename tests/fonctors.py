@@ -53,6 +53,15 @@ class HelperFunctionsTest(unittest.TestCase):
             def m(self): pass
         x = X()
         self.assertListEqual( getattrs(x, True), ["i", "f", "s", "x"] )
+
+    def test_getvalattrs(self):
+        class Y:
+            i = 1
+            f = 12.3
+        y = Y(); y.i=12; y.f=3.0
+        # Attention de ne pas oubier les ()!
+        self.assertSetEqual( y | valattrs(), set([3.0, 12]) )
+        self.assertSetEqual( Y | valattrs(), set([12.3, 1]) )
     
 class FonctorBaseTest(unittest.TestCase):
     def test_base(self):
@@ -75,7 +84,7 @@ class FonctorClassTest(unittest.TestCase):
             set((float, bool, int, str, type(None)))
         )
         self.assertSetEqual(
-            (1,2.2,3,4,'a') | CLASS,
+            (1,2.2,3,4,'a') | CLASS(),
             set((float, int, str))
         )        
 
@@ -84,12 +93,12 @@ class FonctorClassTest(unittest.TestCase):
         class Y(object): pass
         x = X(); y = Y()
         self.assertSetEqual(
-            (x, y) | CLASS,
+            (x, y) | CLASS(),
             set((X, Y))
         )
         
     def test_FonctorAttr(self):
-        f = (int, float) | attrs
+        f = (int, float) | attrs()
         self.assertEqual(len(f), 4)
 
     def test_Fonctor_CLASS_ATTR(self):
@@ -158,9 +167,10 @@ class FonctorClassTest(unittest.TestCase):
         self.assertSetEqual( X() | CLASS, set((X,)))
         self.assertSetEqual( X() | valattrs, set())
 
+    
 if __name__ == '__main__':
     unittest.main(
 ##        defaultTest=(
-##            'HelperFunctionsTest.test_getattrsfromdict'
+##            'HelperFunctionsTest.test_getvalattrs'
 ##            )
         )

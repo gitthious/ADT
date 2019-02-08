@@ -3,8 +3,9 @@
 # run it with:
 #   setup.py sdist bdist_wheel
 # and upload it with:
-#   twine.exe upload  dist/*
-#   
+#   <users>\AppData\Roaming\Python\Python36\Scripts\twine.exe upload  dist/*
+#   or
+#   <programs>\Python36\Scripts\twine.exe upload  dist/*
 
 
 import setuptools
@@ -14,14 +15,18 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="ADTthious", # because ADT already exist
-    version="0.2",
+    version="0.3",
     description='Abstract Data Types for python',
     author='Thierry Hervé',
     author_email='thious.rv@gmail.com',
     url="https://github.com/gitthious/ADT.git",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    packages=[], # setuptools.find_packages(),
+    packages=['ADT',], # setuptools.find_packages(),
+    package_dir={'ADT': '', },
+    package_data={
+      'ADT': ['README.md', 'calendar.png', 'Class instance of Type.ipynb' ],
+    },
     classifiers=[
         "Programming Language :: Python :: 3 :: Only",
         "Development Status :: 3 - Alpha",
@@ -29,5 +34,9 @@ setuptools.setup(
         "Operating System :: OS Independent",
         "Topic :: Software Development :: Libraries :: Python Modules"
     ],
+    install_requires=[
+        'colour>=0.1.5',
+        'PySimpleGUI>=3.24.0',
+    ],      
 )
 

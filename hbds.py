@@ -17,6 +17,8 @@ External references:
  * module leaflet
  * module dataclasses (https://docs.python.org/3/library/dataclasses.html)
    integrate in py3.7
+ * https://pypi.org/project/structures/
+ * http://mypy.readthedocs.io/en/latest/
 """
 
 import collections, types
@@ -549,8 +551,8 @@ def create_relation(cinit, name, cfin):
 Link = create_relation
 
 
-PSC = Fonctor(lambda cls: cls.__psc__)
-NSC = Fonctor(lambda cls: cls.__nsc__)
+PSC = Fonctor(lambda cls: getattr(cls, '__psc__', set()))
+NSC = Fonctor(lambda cls: getattr(cls, '__nsc__', set()))
 
 INIT = Fonctor(lambda rel: rel.__cinit__)
 FIN = Fonctor(lambda rel: rel.__cfin__)

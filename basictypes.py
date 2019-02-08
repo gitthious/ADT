@@ -3,8 +3,10 @@
 from enum import Enum
 import re
 # TODO: remplacer datetime par un module plus cohérent!
-from datetime import date, time, timedelta
+from datetime import time, timedelta
 from datetime import datetime as pydatetime
+from datetime import date as pydate
+import colour
 
 __all__ = [
     'Enum',
@@ -14,25 +16,30 @@ __all__ = [
     'MaxInclusive', 'Interval', 'MinExclusive', 'MaxExclusive', 'MinInclusive',
     'positive', 'negative',
     'Regex', 'SizedString',
-    
+    'Color',
     ]
+
+_formats = (
+    "%Y%m%dT%H%M%S",
+    "%Y-%m-%dT%H:%M:%S",
+    "%Y-%m-%dT%H:%M:%SZ",
+    "%Y-%m-%d %H:%M:%S",
+    "%d/%m/%Y",
+    )
 
 class datetime(pydatetime):
     def __new__(cls, *args, **kargs):
         d = args[0]
         if isinstance(d, str):
-            try:
-                d = cls.strptime(d, "%Y%m%dT%H%M%S")
-            except ValueError:
+            for f in _formats:
                 try:
-                    d = cls.strptime(d, "%Y-%m-%dT%H:%M:%S")
-                except ValueError:
-                    try:
-                        d = cls.strptime(d, "%Y-%m-%dT%H:%M:%SZ")
-                    except ValueError:
-                        d = cls.strptime(d, "%Y-%m-%d %H:%M:%S")
-            d = pydatetime.__new__(cls, d.year, d.month, d.day,
+                    d = cls.strptime(d, f)
+                    d = pydatetime.__new__(cls, d.year, d.month, d.day,
                                    d.hour, d.minute, d.second)
+                    return d
+                except ValueError:
+                    pass
+            raise ValueError("Unsupported ADT.datetime format (%s)" % d)
         elif isinstance(d, pydatetime):
             d = pydatetime.__new__(cls, d.year, d.month, d.day, d.hour,
                                    d.minute, d.second, d.microsecond, d.tzinfo)
@@ -40,6 +47,23 @@ class datetime(pydatetime):
             d = pydatetime.__new__(cls, *args, **kargs)
         return d
             
+class date(pydate):
+    def __new__(cls, *args, **kargs):
+        d = args[0]
+        if isinstance(d, str):
+            for f in _formats:
+                try:
+                    d = pydatetime.strptime(d, f)
+                    d = pydate.__new__(cls, d.year, d.month, d.day)
+                    return d
+                except ValueError:
+                    pass
+            raise ValueError("Unsupported ADT.date format (%s)" % d)
+        elif isinstance(d, pydate):
+            d = pydate.__new__(cls, d.year, d.month, d.day)
+        else:
+            d = pydate.__new__(cls, *args, **kargs)
+        return d
 
 
 class MaxInclusive:
@@ -107,6 +131,12 @@ class Percent(float):
         interval(v)
         return v
 
+
+class Color(colour.Color):
+    @property
+    def RGB(self):
+        h = self.hex_l
+        return int(h[1:3], 16), int(h[3:5], 16), int(h[5:7], 16)
 
 
 

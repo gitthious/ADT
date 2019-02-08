@@ -85,10 +85,9 @@ class Fonctor(object):
     def __exec(self, other):
         result = set()
         for l in [self.__func(o, *self.__args, **self.__kargs) for o in to_iterable(other)]:
-            for o in to_iterable(l): result.add(o)            
+            for oo in to_iterable(l): result.add(oo)
         return result
         
-
 IDENT = Fonctor()                          
 CLASS = Fonctor(type)
 attrs = Fonctor(getattrs)
@@ -100,6 +99,10 @@ def getvalattrs(obj, attrnames=[]):
         return [getattr(obj,a) for a in obj | attrs]
     
 valattrs = Fonctor(getvalattrs)
+
+# Attention: il peut y avoir un bug difficile à trouver si o fait par exemple:
+# "o | valattrs"  à la place de "o | valattrs()". dans ce cas le __ror__
+# fait l'exec sans param. Pas propore
 
 # Return objects that belong to classes
 OBJOF = Fonctor(lambda obj, *classes: obj if isinstance(obj, classes) else [])

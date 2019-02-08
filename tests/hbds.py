@@ -767,6 +767,8 @@ class FonctorClassAttrTest(unittest.TestCase):
     
 class FonctorRelationTest(unittest.TestCase):
     def setUp(self):
+        class X(metaclass=Class):
+            pass
         class XC(metaclass=Class):
             pass
         class YC(metaclass=Class):
@@ -779,9 +781,10 @@ class FonctorRelationTest(unittest.TestCase):
         class RXZ(metaclass=Relation):
             __cinit__ = XC
             __cfin__ = ZC
+        self.X = X
         self.XC = XC; self.YC = YC; self.ZC = ZC
         self.RXY = RXY; self.RXZ = RXZ
-        
+
     def test__psc__(self):
         self.assertSetEqual(self.XC | PSC, set((self.RXY, self.RXZ)))
 
@@ -789,6 +792,12 @@ class FonctorRelationTest(unittest.TestCase):
         self.assertSetEqual( self.XC | NSC, set())
         self.assertSetEqual(self.YC | NSC, set((self.RXY,)))
 
+    def test__psc__none(self):
+        self.assertSetEqual( self.X | PSC, set())
+        
+    def test__nsc__none(self):
+        self.assertSetEqual( self.X | NSC, set())
+        
     def test_init(self):
         self.assertSetEqual( self.RXY | INIT, set((self.XC,)))
         
@@ -815,12 +824,15 @@ class FonctorRelationTest(unittest.TestCase):
 
 class CreateRelationTest(FonctorRelationTest):
     def setUp(self):
+        class X(metaclass=Class):
+            pass
         class XC(metaclass=Class):
             pass
         class YC(metaclass=Class):
             pass
         class ZC(metaclass=Class):
             pass
+        self.X = X
         self.XC = XC; self.YC = YC; self.ZC = ZC
         self.RXY = create_relation(XC, 'RXY', YC)
         self.RXZ = create_relation(XC, 'RXZ', ZC)
@@ -866,10 +878,9 @@ def load_tests(loader, standard_tests, pattern):
     return standard_tests
 
 if __name__ == '__main__':
-    unittest.main(#verbosity=2
+    unittest.main(verbosity=2,
 ##        defaultTest=(
-##        'ClassAndAttrTest.test_att_type',
-##        'ClassAndAttrTest.test_att_heritance',
+##        'ComposedAttTest.test_ComposedAtt_does_not_accept_required_att',
 ##            )
         )
     
