@@ -3,6 +3,7 @@
 import unittest
 from ADT.basictypes import *
 
+
 class TestBasicMixin(unittest.TestCase):
     def test_positive(self):
         positive(12.1)

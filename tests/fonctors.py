@@ -62,6 +62,15 @@ class HelperFunctionsTest(unittest.TestCase):
         # Attention de ne pas oubier les ()!
         self.assertSetEqual( y | valattrs(), set([3.0, 12]) )
         self.assertSetEqual( Y | valattrs(), set([12.3, 1]) )
+
+    def test_to_iterable(self):
+        import enum
+        self.assertEqual(len(to_iterable(1)), 1)
+        L = [1]
+        self.assertEqual(len(to_iterable(L)), 1)
+        self.assertEqual(len(to_iterable("ddd")), 1)
+        B = enum.Enum('B', "dur mou")
+        self.assertEqual(len(to_iterable(B)), 1)
     
 class FonctorBaseTest(unittest.TestCase):
     def test_base(self):

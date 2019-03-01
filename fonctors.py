@@ -25,7 +25,8 @@ les foncteurs:
 TODO: add ordered fonctors
 """
 
-import collections, inspect
+import collections, inspect, enum
+
 
 def getattrsfromdict(dic):
     return [attr for attr in dic \
@@ -65,7 +66,8 @@ def to_iterable(obj):
        If obj is already an iterable, return obj unchanged.
     """
     if not isinstance(obj, collections.Iterable) \
-    or isinstance(obj, str): 
+    or isinstance(obj, str) \
+    or isinstance(obj, enum.EnumMeta): 
         return (obj,)
     return obj
     

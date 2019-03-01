@@ -1,37 +1,46 @@
 # -*- coding: utf-8 -*-
 
-from enum import Enum
 import re
+from enum import Enum
+
 # TODO: remplacer datetime par un module plus cohérent!
 from datetime import time, timedelta
 from datetime import datetime as pydatetime
 from datetime import date as pydate
 import colour
+from pathlib import Path
 
 __all__ = [
     'Enum',
     'datetime', 'date', 'time', 'timedelta',
+    'datetime_formats',
     'PosInt',
     'Percent',
     'MaxInclusive', 'Interval', 'MinExclusive', 'MaxExclusive', 'MinInclusive',
     'positive', 'negative',
     'Regex', 'SizedString',
     'Color',
+    'Path',
     ]
 
-_formats = (
+
+datetime_formats = [
     "%Y%m%dT%H%M%S",
     "%Y-%m-%dT%H:%M:%S",
     "%Y-%m-%dT%H:%M:%SZ",
     "%Y-%m-%d %H:%M:%S",
+    "%Y-%m-%d %H:%M",
+    "%Y-%m-%d %H",
+    "%Y-%m-%d",
     "%d/%m/%Y",
-    )
+    ]
 
+            
 class datetime(pydatetime):
     def __new__(cls, *args, **kargs):
         d = args[0]
         if isinstance(d, str):
-            for f in _formats:
+            for f in datetime_formats:
                 try:
                     d = cls.strptime(d, f)
                     d = pydatetime.__new__(cls, d.year, d.month, d.day,
@@ -51,7 +60,7 @@ class date(pydate):
     def __new__(cls, *args, **kargs):
         d = args[0]
         if isinstance(d, str):
-            for f in _formats:
+            for f in datetime_formats:
                 try:
                     d = pydatetime.strptime(d, f)
                     d = pydate.__new__(cls, d.year, d.month, d.day)
@@ -131,14 +140,11 @@ class Percent(float):
         interval(v)
         return v
 
-
 class Color(colour.Color):
     @property
     def RGB(self):
         h = self.hex_l
         return int(h[1:3], 16), int(h[3:5], 16), int(h[5:7], 16)
-
-
 
 
 
