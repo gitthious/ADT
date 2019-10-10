@@ -7,6 +7,7 @@ from enum import Enum
 from datetime import time, timedelta
 from datetime import datetime as pydatetime
 from datetime import date as pydate
+# cf. https://pypi.org/project/colour/
 import colour
 from pathlib import Path
 

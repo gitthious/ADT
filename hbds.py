@@ -24,7 +24,7 @@ External references:
 import collections, types
 from .fonctors import (getattrsfromdict, getattrs,
                       Fonctor, to_iterable, getvalattrs,
-                      valattrs, OBJOF, attrs)
+                      valattrs, OBJOF, attrs, CLASS)
 from .units import Unit
 
 __all__ = (
@@ -32,6 +32,7 @@ __all__ = (
     'create_Att',
     'ComposedAtt',
     'Class',
+    'CLASS',
     'ATT',
     'OATT',
     'raise_init',
@@ -585,7 +586,16 @@ class Role:
         # et si rel is None?
         return instance | OPSCR(rel) | OFIN
 
-
+class Role01:
+    def __init__(self, relname):
+        self.relname = relname
+    def __get__(self, instance, owner_cls):
+        rel = [r for r in owner_cls | PSC if r.__name__ == self.relname][0]
+        objs = instance | OPSCR(rel) | OFIN
+        if len(objs) == 0:
+            return None
+        return list(objs)[0]
+    
 # Faire des relations ordered...et les foncteurs qui vont avec
 # Optimiser les foncteurs pour éviter de tous parcourir si pas nécessaire
 

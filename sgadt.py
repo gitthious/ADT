@@ -172,7 +172,6 @@ def make_keys(obj, attr):
     return attrlabel_key, attr_key
 
 def id_attr_from_keys(key):
-    print(key)
     ID, attr = key.split('.')
     return int(ID), attr
 
@@ -251,7 +250,6 @@ def AttrsElements(obj, attrs=None, attrname_size=(None,None),
         max([len(a) for a in attrs]),
         sg.DEFAULT_ELEMENT_SIZE[1]
         )
-    print(attrname_size)
 
     layout = []
     for attr in attrs:
@@ -305,7 +303,6 @@ class ADTWindow(sg.Window):
             if is_hbds(obj):
                 pytype = getattr(type(obj), attr).type
                 newval = convert_enum(pytype, newval)
-                print(newval)
                 newval = getattr(type(obj), attr)._validate(newval)
             else:
                 pytype = type(getattr(obj, attr))
@@ -387,11 +384,6 @@ def show_hbds_object():
       event, values = window.Read()
 ##      print(event, values)
       if event is None: return
-      id, attr = id_attr_from_keys(event)
-      obj = window.objects[id]
-      nv = values[event]
-      print("Changed: obj %s, attr %s, old value %s, new value %s" % \
-            (obj, attr, nv, str(getattr(obj, attr))) )
 
 def test_size():
     ST = (15,1)
