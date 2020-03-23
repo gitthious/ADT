@@ -2,9 +2,10 @@
 
 import unittest
 from ADT.basictypes import Enum, date, datetime
-from ADT.fonctors import CLASS, getattrs
+from ADT.fonctors import *
 from ADT.hbds import *
 from ADT import units
+from fonctors import BaseFonctorTest
 
 class AttTest(unittest.TestCase):
 
@@ -747,7 +748,7 @@ class RelationErrorsTest(unittest.TestCase):
                 __cfin__ = X
 
         
-class FonctorClassAttrTest(unittest.TestCase):
+class FonctorClassAttrTest(BaseFonctorTest):
 
     def test_Fonctor_ATT_OATT(self):
         class X(metaclass=Class):
@@ -755,17 +756,17 @@ class FonctorClassAttrTest(unittest.TestCase):
             b = Att(float)
             c = Att(str, "sss")
             d = Att(bool, True)
-        r = set(('a', 'b', 'c', 'd'))
-        self.assertSetEqual(set([a.name for a in X | ATT]), r) 
-        self.assertSetEqual(set([a.name for a in X() | CLASS | ATT]), r) 
+        r = ('a', 'b', 'c', 'd')
+        self.assertFEqual((a.name for a in (X,) | ATT), r) 
+        self.assertFEqual((a.name for a in (X(),) | CLASS | ATT), r) 
 
-        self.assertSetEqual( X() | OATT, set((None, 'sss', True)))
-        self.assertSetEqual(X() | OATT | CLASS, set((type(None), str, bool)))
+        self.assertFEqual( ((X(),) | OATT | dedup), (None, 'sss', True))
+        self.assertFEqual( ((X(),) | OATT | CLASS | dedup), (type(None), str, bool))
 
     def test_Fonctor_OATT_with_attrs(self):
         pass
     
-class FonctorRelationTest(unittest.TestCase):
+class FonctorRelationTest(BaseFonctorTest):
     def setUp(self):
         class X(metaclass=Class):
             pass
@@ -786,41 +787,41 @@ class FonctorRelationTest(unittest.TestCase):
         self.RXY = RXY; self.RXZ = RXZ
 
     def test__psc__(self):
-        self.assertSetEqual(self.XC | PSC, set((self.RXY, self.RXZ)))
+        self.assertFEqual((self.XC,) | PSC, (self.RXY, self.RXZ))
 
     def test__nsc__(self):
-        self.assertSetEqual( self.XC | NSC, set())
-        self.assertSetEqual(self.YC | NSC, set((self.RXY,)))
+        self.assertFEqual( (self.XC,) | NSC, ())
+        self.assertFEqual( (self.YC,) | NSC, (self.RXY,))
 
     def test__psc__none(self):
-        self.assertSetEqual( self.X | PSC, set())
+        self.assertFEqual( (self.X,) | PSC, ())
         
     def test__nsc__none(self):
-        self.assertSetEqual( self.X | NSC, set())
+        self.assertFEqual( (self.X,) | NSC, ())
         
     def test_init(self):
-        self.assertSetEqual( self.RXY | INIT, set((self.XC,)))
+        self.assertFEqual( (self.RXY,) | INIT, (self.XC,))
         
     def test_fin(self):
-        self.assertSetEqual((self.RXY, self.RXZ) | FIN, set((self.YC, self.ZC)))
+        self.assertFEqual( (self.RXY, self.RXZ) | FIN, (self.YC, self.ZC))
 
     def test_opsc_ofin(self):
         x = self.XC(); y = self.YC()
         self.RXY(x, y)
-        self.assertSetEqual(x | OPSC | OFIN, set((y,)))
+        self.assertFEqual( (x,) | OPSC | OFIN, (y,))
         z = self.ZC()
         self.RXZ(x, z)
-        self.assertSetEqual(x | OPSC | OFIN, set((y, z)))
-        self.assertSetEqual(x | OPSCR(self.RXZ) | OFIN, set((z,)))
+        self.assertFEqual( (x,) | OPSC | OFIN, (y, z))
+        self.assertFEqual( (x,) | OPSCR(self.RXZ) | OFIN, (z,))
     
     def test_onsc_ofin(self):
         x = self.XC(); y = self.YC()
         self.RXY(x, y)
-        self.assertSetEqual(y | ONSC | OINIT, set((x,)))
+        self.assertFEqual( (y,) | ONSC | OINIT | dedup, (x,))
         z = self.ZC()
         self.RXZ(x, z)
-        self.assertSetEqual((y, z) | ONSC | OINIT, set((x,)))
-        self.assertSetEqual((y, z) | ONSCR(self.RXY) | OINIT, set((x,)))
+        self.assertFEqual( (y, z) | ONSC | OINIT | dedup, (x,))
+        self.assertFEqual( (y, z) | ONSCR(self.RXY) | OINIT | dedup, (x,))
 
 class CreateRelationTest(FonctorRelationTest):
     def setUp(self):
@@ -868,7 +869,7 @@ class ClassRoleTest(unittest.TestCase):
 
         class P(metaclass=Pawn): pass
         P.id = 1
-        self.assertSetEqual(P.equipments, set())
+        self.assertSequenceEqual(P.equipments, ())
 
 def load_tests(loader, standard_tests, pattern):
     # add new doctest tests
@@ -880,7 +881,7 @@ def load_tests(loader, standard_tests, pattern):
 if __name__ == '__main__':
     unittest.main(verbosity=2,
 ##        defaultTest=(
-##        'ComposedAttTest.test_ComposedAtt_does_not_accept_required_att',
+##        'FonctorRelationTest',#.test_ComposedAtt_does_not_accept_required_att',
 ##            )
         )
     

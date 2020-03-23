@@ -7,6 +7,7 @@ from enum import Enum
 from datetime import time, timedelta
 from datetime import datetime as pydatetime
 from datetime import date as pydate
+from dateutil import parser
 # cf. https://pypi.org/project/colour/
 import colour
 from pathlib import Path
@@ -14,7 +15,6 @@ from pathlib import Path
 __all__ = [
     'Enum',
     'datetime', 'date', 'time', 'timedelta',
-    'datetime_formats',
     'PosInt',
     'Percent',
     'MaxInclusive', 'Interval', 'MinExclusive', 'MaxExclusive', 'MinInclusive',
@@ -24,55 +24,18 @@ __all__ = [
     'Path',
     ]
 
-
-datetime_formats = [
-    "%Y%m%dT%H%M%S",
-    "%Y-%m-%dT%H:%M:%S",
-    "%Y-%m-%dT%H:%M:%SZ",
-    "%Y-%m-%d %H:%M:%S",
-    "%Y-%m-%d %H:%M",
-    "%Y-%m-%d %H",
-    "%Y-%m-%d",
-    "%d/%m/%Y",
-    ]
-
             
 class datetime(pydatetime):
     def __new__(cls, *args, **kargs):
-        d = args[0]
-        if isinstance(d, str):
-            for f in datetime_formats:
-                try:
-                    d = cls.strptime(d, f)
-                    d = pydatetime.__new__(cls, d.year, d.month, d.day,
-                                   d.hour, d.minute, d.second)
-                    return d
-                except ValueError:
-                    pass
-            raise ValueError("Unsupported ADT.datetime format (%s)" % d)
-        elif isinstance(d, pydatetime):
-            d = pydatetime.__new__(cls, d.year, d.month, d.day, d.hour,
-                                   d.minute, d.second, d.microsecond, d.tzinfo)
-        else:
-            d = pydatetime.__new__(cls, *args, **kargs)
-        return d
-            
+        try:
+            return parser.parse(*args, **kargs)
+        except TypeError:
+            return pydatetime.__new__(cls, *args, **kargs)
+    
 class date(pydate):
     def __new__(cls, *args, **kargs):
-        d = args[0]
-        if isinstance(d, str):
-            for f in datetime_formats:
-                try:
-                    d = pydatetime.strptime(d, f)
-                    d = pydate.__new__(cls, d.year, d.month, d.day)
-                    return d
-                except ValueError:
-                    pass
-            raise ValueError("Unsupported ADT.date format (%s)" % d)
-        elif isinstance(d, pydate):
-            d = pydate.__new__(cls, d.year, d.month, d.day)
-        else:
-            d = pydate.__new__(cls, *args, **kargs)
+        d = parser.parse(*args, **kargs)
+        d = pydate.__new__(cls, d.year, d.month, d.day)
         return d
 
 

@@ -8,7 +8,7 @@ Au départ, ce package regroupe des modules utiles pour la manipulation de types
 
 Il propose 3 modules:
     * hbds      : défini un meta-modèle *pythonic* pour manipuler
-                   Class, Attributs typés, et aussi des Relations
+                   Class, Attributs typés, et aussi (et surtout) des Relations
     
     * basictypes: types de base en plus de ceux de python
         (int, float, str, complex, enum, datetime)
@@ -16,7 +16,7 @@ Il propose 3 modules:
     * fonctors  : des filtres sur des listes d'objets, comme des pipes
     
 # TODO
- * Tester encore dans tous les cas du data model de pyhon
+ * Tester encore dans tous les cas du data model de python
  * spécialiser les relations pour plus de performance
 
 # A voir
@@ -28,10 +28,6 @@ Il propose 3 modules:
  * sous github:
      * param et paramnb
      * trait et pytraitlet
-
-# Historique des versions
-      2016, 0.1: première version sous py27
-01/06/2018, 0.2: passage sous py3 et GitHub
 
 """
 name = "ADT"

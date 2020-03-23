@@ -51,14 +51,16 @@ class TestBasicMixin(unittest.TestCase):
 class Testdatetime(unittest.TestCase):
     def test_str(self):
         D = datetime(2016,5,30, 9, 55, 0)
-        d = datetime('2016-05-30 09:55:00')
-        self.assertEqual(d, D)
-        d = datetime('20160530T095500')
-        self.assertEqual(d, D)
-        d = datetime('2016-05-30T09:55:00')
-        self.assertEqual(d, D)
+        self.assertEqual(datetime('2016-05-30 09:55:00'), D)
+        self.assertEqual(datetime('20160530T095500'), D)
+        self.assertEqual(datetime('2016-05-30T09:55:00'), D)
         d = datetime('2016-05-30T09:55:00Z')
-        self.assertEqual(d, D)
+        self.assertTrue(
+                d != D \
+            and d.tzinfo.utcoffset(d)==timedelta(0) \
+            and D.tzinfo is None
+            )
+        
         
         
 if __name__ == '__main__':

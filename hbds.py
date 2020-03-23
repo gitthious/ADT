@@ -22,9 +22,7 @@ External references:
 """
 
 import collections, types
-from .fonctors import (getattrsfromdict, getattrs,
-                      Fonctor, to_iterable, getvalattrs,
-                      valattrs, OBJOF, attrs, CLASS)
+from .fonctors import *
 from .units import Unit
 
 __all__ = (
@@ -52,6 +50,7 @@ __all__ = (
     'OINIT',
     'OFIN',
     'Role',
+    'dedup', # from pipe module
     )
 
 class Att:
@@ -145,7 +144,7 @@ class ComposedAtt:
     def __init__(self, **attr_defs):
         name = "%s_tmp" % self.__class__.__name__
         self._class = create_class(name, attr_defs)
-        L = [v for v in self._class | ATT if v.mandatory and not v.default]
+        L = [v for v in (self._class,) | ATT if v.mandatory and not v.default]
         if len(L) != 0:
             raise AttributeError("Impossible to use mandatory attribute without default value in ComposedAtt")
 
@@ -181,7 +180,7 @@ class Class(type):
 
         # transform python public attributes (and that not method)
         # of the new class to an Att if needed
-        for public_att in getattrsfromdict(clsnamespace):
+        for public_att in public_attrs_fromdict(clsnamespace):
             val = clsnamespace[public_att]
 
             # to detect embeded class definitions as
@@ -203,7 +202,7 @@ class Class(type):
             for b in bases:
                 if b is object: continue
                 up_attrs_by_bases[b] = collections.OrderedDict([ \
-                (a,getattr(b,a)) for a in getattrs(b) \
+                (a,getattr(b,a)) for a in public_attrs(b) \
                 if isinstance(getattr(b,a), Att)] )
 
             # ... and an another just for new class
@@ -357,9 +356,15 @@ def create_class(name, attr_defs):
             clsdic[att] = val
     return types.new_class(name, kwds=meta, exec_body=update)
 
-ATT = Fonctor(lambda cls: cls | valattrs | OBJOF(Att))
+from pipe import Pipe
 
-OATT = Fonctor(lambda obj: [getattr(obj, a.name) for a in type(obj) | ATT])
+@Pipe
+def ATT(classes):
+    return classes | valattrs | OBJOF(Att)
+
+@Pipe
+def OATT(objects):
+    return (getattr(obj, a.name) for obj in objects for a in (obj,) | CLASS | ATT )
 
 def raise_init(cls):
     """
@@ -377,8 +382,9 @@ def raise_init(cls):
     cls.__init__ = init
     return cls
 
-
-OBJ = Fonctor(lambda cls: getattr(cls, '__obj__'))
+@Pipe
+def OBJ(classes):
+    return (o for cls in classes for o in getattr(cls, '__obj__'))
 
 def keep_objects_relationship(cls):
     """
@@ -399,7 +405,7 @@ def keep_objects_relationship(cls):
     [<class 'ADT.hbds.X'>, <class 'ADT.hbds.Y'>]
 
     Usage of *__obj__* is just for tests. It's more pretty to use fonctor OBJ
-    >>> L = TerrainType | OBJ  # product en set() with ungaranted order
+    >>> L = list((TerrainType,) | OBJ)  # creation order is preserved
     >>> X in L and Y in L and len(L) == 2 # 
     True
 
@@ -551,28 +557,42 @@ def create_relation(cinit, name, cfin):
 # Alias
 Link = create_relation
 
+@Pipe
+def PSC(classes):
+    return (r for cls in classes for r in getattr(cls, '__psc__', () ) )
 
-PSC = Fonctor(lambda cls: getattr(cls, '__psc__', set()))
-NSC = Fonctor(lambda cls: getattr(cls, '__nsc__', set()))
+@Pipe
+def NSC(classes):
+    return (r for cls in classes for r in getattr(cls, '__nsc__', () ) )
 
-INIT = Fonctor(lambda rel: rel.__cinit__)
-FIN = Fonctor(lambda rel: rel.__cfin__)
+@Pipe
+def INIT(rels):
+    return (r.__cinit__ for r in rels)
 
-def opsc(obj, rel=None):
-    if rel is None: return obj.__psc__
-    return [r for r in obj.__psc__ if isinstance(r, rel)]
-OPSC = Fonctor(opsc)
-OPSCR = Fonctor(opsc)
+@Pipe
+def FIN(rels):
+    return (r.__cfin__ for r in rels)
 
-def onsc(obj, rel=None):
-    if rel is None: return obj.__nsc__
-    return [r for r in obj.__nsc__ if isinstance(r, rel)]
-ONSC = Fonctor(onsc)
-ONSCR = Fonctor(onsc)
+@Pipe
+def opsc(objects, rel=None):
+    if rel is None: return (r for obj in objects for r in obj.__psc__)
+    return (r for obj in objects for r in obj.__psc__ if isinstance(r, rel))
 
+OPSC = opsc
+OPSCR = opsc
 
-OINIT = Fonctor(lambda r: r.__oinit__)
-OFIN = Fonctor(lambda r: r.__ofin__)
+@Pipe
+def onsc(objects, rel=None):
+    if rel is None: return (r for obj in objects for r in obj.__nsc__)
+    return (r for obj in objects for r in obj.__nsc__ if isinstance(r, rel))
+
+ONSC = onsc
+ONSCR = onsc
+
+@Pipe
+def OINIT(orels): return (r.__oinit__ for r in orels)
+@Pipe
+def OFIN(orels): return (r.__ofin__ for r in orels)
 
 
 class Role:
@@ -582,21 +602,23 @@ class Role:
     def __init__(self, relname):
         self.relname = relname
     def __get__(self, instance, owner_cls):
-        rel = [r for r in owner_cls | PSC if r.__name__ == self.relname][0]
+        rel = list(r for r in (owner_cls,) | PSC if r.__name__ == self.relname)[0]
         # et si rel is None?
-        return instance | OPSCR(rel) | OFIN
+        objs = list((instance,) | OPSCR(rel) | OFIN)
+        if len(objs) == 0:
+            return ()
+        else:
+            return objs
 
 class Role01:
     def __init__(self, relname):
         self.relname = relname
     def __get__(self, instance, owner_cls):
-        rel = [r for r in owner_cls | PSC if r.__name__ == self.relname][0]
-        objs = instance | OPSCR(rel) | OFIN
+        rel = list(r for r in owner_cls | PSC if r.__name__ == self.relname)[0]
+        objs = list((instance,) | OPSCR(rel) | OFIN)
         if len(objs) == 0:
             return None
         return list(objs)[0]
     
-# Faire des relations ordered...et les foncteurs qui vont avec
-# Optimiser les foncteurs pour éviter de tous parcourir si pas nécessaire
 
 

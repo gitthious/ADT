@@ -84,7 +84,7 @@ class Cache(collections.MutableSet):
         cls.__setattr__ = fset
         self._caching_types[cls] = oldfset
 
-        for R in (cls | hbds.PSC).union( cls | hbds.NSC): # relations in & out
+        for R in list((cls,) | hbds.PSC)+ list( (cls,) | hbds.NSC): # relations in & out
             oldinit = R.__init__
             def init(rel, *args, **kargs):
                 oldinit(rel, *args, **kargs)

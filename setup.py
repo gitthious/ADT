@@ -15,7 +15,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="ADTthious", # because ADT already exist
-    version="0.3",
+    version="0.4",
     description='Abstract Data Types for python',
     author='Thierry Hervé',
     author_email='thious.rv@gmail.com',
@@ -35,8 +35,10 @@ setuptools.setup(
         "Topic :: Software Development :: Libraries :: Python Modules"
     ],
     install_requires=[
-        'colour>=0.1.5',
-        'PySimpleGUI>=3.24.0',
+        'colour==0.1.5',
+        'PySimpleGUI==4.0.0',
+        'pipe==1.6.0',
+        'python-dateutil==2.8.1',
     ],      
 )
 
