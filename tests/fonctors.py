@@ -2,6 +2,7 @@
 
 import unittest
 from ADT.fonctors import *
+from pipe import dedup, select
 
 class BaseFonctorTest(unittest.TestCase):
     def assertFEqual(self, f1, f2):
@@ -91,10 +92,10 @@ class FonctorClassTest(BaseFonctorTest):
             i = 1
             f = 12.3
         y = Y(); y.i=12; y.f=3.0
-        self.assertFEqual( (y,) | valattrs(follow_mro=False), [12, 3.0] )
-        self.assertFEqual( (Y,) | valattrs(follow_mro=False), [1, 12.3] )
-        self.assertFEqual( (y,) | valattrs, [0, 12, 3.0] )
-        self.assertFEqual( (Y,) | valattrs, [0, 1, 12.3] )
+        self.assertFEqual( y | valattrs(follow_mro=False), [12, 3.0] )
+        self.assertFEqual( Y | valattrs(follow_mro=False), [1, 12.3] )
+        self.assertFEqual( y | valattrs, [0, 12, 3.0] )
+        self.assertFEqual( Y | valattrs, [0, 1, 12.3] )
         
     def test_FonctorClass(self):
         self.assertFEqual(
@@ -124,9 +125,9 @@ class FonctorClassTest(BaseFonctorTest):
         class Y(X):
             C = 3
             D = 4
-        f = (Y,) | attrs
+        f = Y | attrs
         self.assertFEqual(f, ['A', 'B', 'C', 'D'])
-        f = (Y,) | attrs(follow_mro=False)
+        f = Y | attrs(follow_mro=False)
         self.assertFEqual(f, ['C', 'D'])
         
 
@@ -142,7 +143,7 @@ class FonctorClassTest(BaseFonctorTest):
             C = 'abc'
             D = 1
         x = X()
-        self.assertFEqual([x] | valattrs,(1, 1.3, 'abc', 1))
+        self.assertFEqual( x | valattrs,(1, 1.3, 'abc', 1))
 
     def test_FonctorObjectNamedAttr(self):
         class X:
@@ -168,7 +169,7 @@ class FonctorClassTest(BaseFonctorTest):
             D = 1
         x = X()
         self.assertFEqual(
-            [x] | valattrs | CLASS,
+            x | valattrs | CLASS,
             (int, float, str, int)
         )
 
@@ -189,9 +190,9 @@ class FonctorClassTest(BaseFonctorTest):
         
     def test_Fonctor_without_hbds(self):
         class X: pass
-        self.assertFEqual( (X,) | attrs, [])
-        self.assertFEqual( (X(),) | CLASS, (X,))
-        self.assertFEqual( [X()] | valattrs, [])
+        self.assertFEqual( X | attrs, [])
+        self.assertFEqual( X() | CLASS, (X,))
+        self.assertFEqual( X() | valattrs, [])
 
             
 if __name__ == '__main__':

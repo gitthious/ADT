@@ -19,13 +19,27 @@ les foncteurs:
     options: raise and stop or raise and continue
 
     ex:
-       (X,) | OBJ | OPSC(R) | OFIN => mieux car introduit une nouvelle syntaxe pour un nx d'abstraction sup.
+       X | OBJ | OPSC(R) | OFIN => mieux car introduit une nouvelle syntaxe pour un nx d'abstraction sup.
        X.OBJ.OPSC(R).OFIN
 
 """
 
+__all__ = [
+    "public_attrs_fromdict",
+    "public_attrs",
+    "to_iterable",
+    
+    "Fonct",
+    
+    "CLASS",
+    "attrs",
+    "valattrs",
+    "OBJOF",
+    ]
+
 import inspect, enum, warnings
 from collections.abc import Iterable
+
 
 def public_attrs_fromdict(dic):
     """
@@ -101,12 +115,26 @@ def to_iterable(obj):
 
 from pipe import *
 
-@Pipe
+class Fonct(Pipe):
+    """
+    Same as Pipe except you can use object that is not a iterable
+    at first arg. ie, if x is an instance:
+    x | valattrs | CLASS return all types (classes) of attribute values of x.
+    this is the same as (x,) | valattrs | CLASS, but more shorter!
+    """
+    def __ror__(self, other):
+        return self.function(to_iterable(other))
+
+    def __call__(self, *args, **kwargs):
+        return Fonct(lambda x: self.function(x, *args, **kwargs))
+    
+
+@Fonct
 def CLASS(objects):
     """Return generator on types (or classes) of objects"""
     return (type(o) for o in objects)
 
-@Pipe
+@Fonct
 def attrs(objects, follow_mro=True):
     """Return generator on all public attribute names of objects.
        By default, follow_mro is true to retreive all attributes throught
@@ -116,7 +144,7 @@ def attrs(objects, follow_mro=True):
         for att in public_attrs(obj, follow_mro):
             yield att
 
-@Pipe
+@Fonct
 def valattrs(objects, attrnames=[], follow_mro=True):
     """Return generator on all public attribute values of objects.
        By default, follow_mro is true to retreive all attributes throught
@@ -131,7 +159,7 @@ def valattrs(objects, attrnames=[], follow_mro=True):
         for obj in objects:
             for att in public_attrs(obj, follow_mro):
                 yield getattr(obj,att)
-@Pipe           
+@Fonct           
 def OBJOF(objects, *classes):
     """Return generator to filter objects that are instances of classes."""
     return (obj for obj in objects if isinstance(obj, classes))

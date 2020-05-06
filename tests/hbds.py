@@ -6,6 +6,7 @@ from ADT.fonctors import *
 from ADT.hbds import *
 from ADT import units
 from fonctors import BaseFonctorTest
+from pipe import dedup
 
 class AttTest(unittest.TestCase):
 
@@ -242,7 +243,7 @@ class ClassAndAttrTest(unittest.TestCase):
         self.X = X
 
     def test_getattrs_class(self):
-        attrs = getattrs(self.X)
+        attrs = public_attrs(self.X)
         self.assertEqual( len(attrs), 6)
         for attr in attrs:
             self.assertIn( attr, ["i", "f", "s", "x", "e", "dt"])
@@ -354,7 +355,7 @@ class ClassAndAttrTest(unittest.TestCase):
     def test_class_with_no_attribute(self):
         class Y(metaclass=Class):
             pass
-        self.assertEqual( len(getattrs(Y)), 0)
+        self.assertEqual( len(public_attrs(Y)), 0)
         
     def test_set_undeclared_att(self):
         with self.assertRaises(AttributeError):

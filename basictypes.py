@@ -27,6 +27,8 @@ __all__ = [
             
 class datetime(pydatetime):
     def __new__(cls, *args, **kargs):
+        if isinstance(args[0], pydatetime):
+            return args[0]
         try:
             return parser.parse(*args, **kargs)
         except TypeError:

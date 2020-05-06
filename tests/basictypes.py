@@ -60,6 +60,14 @@ class Testdatetime(unittest.TestCase):
             and d.tzinfo.utcoffset(d)==timedelta(0) \
             and D.tzinfo is None
             )
+
+    def test_datetime(self):
+        D = datetime(2016,5,30, 9, 55, 0)
+        self.assertEqual(datetime(D), D)
+        from datetime import datetime as pydatetime
+        D = pydatetime(2016,5,30, 9, 55, 0)
+        self.assertEqual(datetime(D), D)
+        
         
         
         

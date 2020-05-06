@@ -50,7 +50,6 @@ __all__ = (
     'OINIT',
     'OFIN',
     'Role',
-    'dedup', # from pipe module
     )
 
 class Att:
