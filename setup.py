@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 # read https://packaging.python.org/tutorials/packaging-projects/
+# make sure you installed twine package with pip install twine
 # run it with:
 #   setup.py sdist bdist_wheel
 # and upload it with:
-#   <users>\AppData\Roaming\Python\Python36\Scripts\twine.exe upload  dist/*
-#   or
-#   <programs>\Python36\Scripts\twine.exe upload  dist/*
+#   python3 -m twine upload  dist/*
 
 
 import setuptools
@@ -15,7 +14,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="ADTthious", # because ADT already exist
-    version="0.4",
+    version="0.5",
     description='Abstract Data Types for python',
     author='Thierry Hervé',
     author_email='thious.rv@gmail.com',

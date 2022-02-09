@@ -309,19 +309,19 @@ class ADTWindow(sg.Window):
                 newval = convert_enum(pytype, newval)
                 newval = pytype(newval)
         except (TypeError, ValueError) as e:
-            self.FindElement('_'+event).Update(text_color='red')
-            self.FindElement('?_'+event).Update(visible=True)
-            #self.FindElement(event).Update(getattr(obj, attr))
+            self.find_element('_'+event).Update(text_color='red')
+            self.find_element('?_'+event).Update(visible=True)
+            #self.find_element(event).Update(getattr(obj, attr))
             self.errors[event] = str(e)
             return event, values
 
         # update helper basetype button
         if isinstance(newval, basictypes.Color):
-            self.FindElement('__'+event).Update(text='', button_color=(None,newval))
+            self.find_element('__'+event).Update(text='', button_color=(None,newval))
 
         # reset label and help if no errors
-        self.FindElement('_'+event).Update(text_color=sg.DEFAULT_TEXT_COLOR)
-        self.FindElement('?_'+event).Update(visible=False)
+        self.find_element('_'+event).Update(text_color=sg.DEFAULT_TEXT_COLOR)
+        self.find_element('?_'+event).Update(visible=False)
         if event in self.errors:
             del self.errors[event]
 

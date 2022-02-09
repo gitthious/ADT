@@ -1,5 +1,6 @@
 ADT
-
+- Parfois les contrôles de type de base sont trop spécifiques. Ex : TypeError: '2021-03-24 05:03:30' for '<Att(type=<class 'ADT.basictypes.datetime'>, default=None, mandatory=<class 'ADT.hbds.Att.required'>)>named begin'. Should be '<class 'ADT.basictypes.datetime'>' instead of '<class 'datetime.datetime'>'
+ 
 # Versions
 * 0.4:
 	* ré-écriture des *foncteurs* avec le module *pipe*
